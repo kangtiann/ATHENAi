@@ -1,0 +1,10 @@
+{
+    "foam.openDailyNote.onStartup": false,
+    "python.testing.pytestArgs": [
+        "tests",
+        "-s",
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.defaultInterpreterPath": "python3"
+}
