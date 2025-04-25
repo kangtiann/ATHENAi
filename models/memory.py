@@ -17,6 +17,7 @@ class Vision(BaseModel):
     vision = CharField(index=True, unique=True)
     status = CharField(index=True)
     priority = CharField(index=True)
+    tags = CharField()
     propose_by = CharField(index=True)
     propose_time = IntegerField()
     update_time = IntegerField()
@@ -39,6 +40,7 @@ class Research(BaseModel):
     report_path = CharField()
     status = CharField(index=True)
     priority = CharField(index=True)
+    tags = CharField()
     propose_by = CharField(index=True)
     propose_time = IntegerField()
     update_time = IntegerField()
@@ -60,6 +62,7 @@ class Deepthink(BaseModel):
     result = TextField()
     status = CharField(index=True)
     priority = CharField(index=True)
+    tags = CharField()
     propose_by = CharField(index=True)
     propose_time = IntegerField()
     update_time = IntegerField()
@@ -115,7 +118,14 @@ class Status:
     CANCEL = "cancel"
     SUSPENDED = "suspended"
     RESUMED = "resumed"
-    PROPOSAL = "proposal"
+    PROPOSED = "proposed"
+
+    COMMITED = "commited"
+    IMPREFECT_COMMIT = "imperfect_commit"
+    ACCEPTED_COMMIT = "accepted_commit"
+    REJECTED_COMMIT = "rejected_commit"
+    ACCEPTED_BY_HUMEN = "accepted_by_humen"
+    REJECTED_BY_HUMEN = "rejected_by_humen"
 
 
 class ResourceType:
@@ -126,10 +136,11 @@ class ResourceType:
     VIDEO = "video"
     AUDIO = "audio"
     CODE = "code"
+    CARD = "card"  # 知识卡片
 
 
 class Events:
-    READY = "ready"
+    READY = "ready" # 已准备好
     ASSIGN = "assign"
     START = "start"
     FAIL = "fail"
@@ -138,8 +149,17 @@ class Events:
     RESUME = "resume"
     RETRY = "retry"
     DONE = "done"
-    PROPOSAL = "proposal"
-    ACCEPT = "accept"
+    
+    PROPOSAL = "proposal" # 提案
+    ACCEPT_PROPOSAL = "accept_proposal" # 接受提案    
+    
+    COMMIT = "commit" # 提交初步结果
+    IMPERFECT_COMMIT = "imperfect_commit" # 不完美提交
+    ACCEPT_COMMIT = "accept_commit" # Alice 接受提交
+    REJECT_COMMIT = "reject_commit" # Alice 拒绝提交
+    
+    ACCEPT_BY_HUMEN = "accept_by_humen" # 人类接受提交
+    REJECT_BY_HUMEN = "reject_by_humen" # 人类拒绝提交
 
 
 class Priority:

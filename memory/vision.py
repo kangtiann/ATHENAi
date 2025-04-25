@@ -20,6 +20,7 @@ class VisionSM(StateMachine):
     update_time = None
     finish_time = None
     priority = Priority.LOW
+    tags = ""
 
     # states
     s_init = State(value=Status.INIT, initial=True)
@@ -74,6 +75,7 @@ class VisionSM(StateMachine):
         instance.update_time = db_model.update_time
         instance.finish_time = db_model.finish_time
         instance.priority = db_model.priority
+        instance.tags = db_model.tags
         instance.id = db_model.id
         return instance
 
@@ -86,6 +88,7 @@ class VisionSM(StateMachine):
                 vision = self.vision,
                 status = self.state,
                 priority = self.priority,
+                tags = self.tags,
                 propose_by = self.propose_by,
                 propose_time = get_now_unixtime(),
                 update_time = get_now_unixtime(),
@@ -93,6 +96,7 @@ class VisionSM(StateMachine):
             )
         self.db_model.propose_by = self.propose_by
         self.db_model.priority = self.priority
+        self.db_model.tags = self.tags
         self.db_model.status = self.state
         self.db_model.update_time = get_now_unixtime()
         if self.state == Status.DONE and self.db_model.finish_time == 0:

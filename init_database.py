@@ -1,4 +1,5 @@
-from models.memory import db, Vision, Research, Deepthink, Task, Resource, VisionProgress, ResearchProgress, DeepthinkProgress
+from models.db import db
+from models.memory import Vision, Research, Deepthink, Task, Resource, VisionProgress, ResearchProgress, DeepthinkProgress
 
 
 def create_tables():

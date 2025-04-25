@@ -23,6 +23,7 @@ class ResearchSM(StateMachine):
     update_time = get_now_unixtime()
     finish_time = 0
     priority = Priority.LOW
+    tags = ""
 
     # states
     s_init = State(value=Status.INIT, initial=True)
@@ -38,8 +39,8 @@ class ResearchSM(StateMachine):
 
     cycle = (
         s_init.to(s_ready, event=Events.READY)
-        | s_init.to(s_proposed, event=Events.PROPOSE)
-        | s_proposed.to(s_ready, event=Events.READY)
+        | s_init.to(s_proposed, event=Events.PROPOSAL)
+        | s_proposed.to(s_ready, event=Events.ACCEPT_PROPOSAL)
         | s_ready.to(s_assigned, event=Events.ASSIGN)
         | s_assigned.to(s_doing, event=Events.START)
         | s_init.to(s_doing, event=Events.START)
@@ -85,6 +86,7 @@ class ResearchSM(StateMachine):
         instance.update_time = db_model.update_time
         instance.finish_time = db_model.finish_time
         instance.priority = db_model.priority
+        instance.tags = db_model.tags
         instance.id = db_model.id
         return instance
 
@@ -98,6 +100,7 @@ class ResearchSM(StateMachine):
                 vision = self.vision_id,
                 status = self.state,
                 priority = self.priority,
+                tags = self.tags,
                 result = self.result,
                 report_path = self.report_path,
                 propose_by = self.propose_by,
@@ -107,6 +110,7 @@ class ResearchSM(StateMachine):
             )
         self.db_model.propose_by = self.propose_by
         self.db_model.priority = self.priority
+        self.db_model.tags = self.tags
         self.db_model.result = self.result
         self.db_model.report_path = self.report_path
         self.db_model.status = self.state

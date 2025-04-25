@@ -77,6 +77,10 @@ def test_task_sm():
     new_task_sm.summary = "通过分析 Attention is all your need 论文，发现了以下结论：1. 多头注意力可以实现高效的并行计算 2. xxx"
     new_task_sm.send("done")
 
+def test_peewee():
+    records = list(Vision.select().dicts())
+    return records
+
 
 if __name__ == "__main__":
-    test_vision_sm()
+    test_peewee()

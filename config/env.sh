@@ -1,7 +1,7 @@
 # Example env
 
-export ATHENA1_PG_DB="athena1"
-export ATHENA1_PG_HOST="localhost"
-export ATHENA1_PG_PORT="5432"
-export ATHENA1_PG_USER="kangtian"
-export ATHENA1_PG_PASS=""
+export ATHENAI_PG_DB="athenai"
+export ATHENAI_PG_HOST="localhost"
+export ATHENAI_PG_PORT="5432"
+export ATHENAI_PG_USER="kang"
+export ATHENAI_PG_PASS=""
