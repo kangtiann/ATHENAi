@@ -10,10 +10,11 @@ class TaskSM(StateMachine):
     logger = logging.getLogger("TaskSM")
 
     # db instance
-    db_model = None
+    inst = None
 
     # props
     id = ""
+    task = ""
     task_desc = ""
     result = ""
     summary = ""
@@ -41,9 +42,9 @@ class TaskSM(StateMachine):
         | s_doing.to(s_done, event=Events.DONE)
     )
 
-    def __init__(self, task_desc, deepthink_id, start_value=Status.INIT):
+    def __init__(self, task, deepthink_id, start_value=Status.INIT):
         super().__init__(start_value=start_value)
-        self.task_desc = task_desc
+        self.task = task
         self.deepthink_id = deepthink_id
         if not self.id:
             self.id = Id.new_id()
@@ -53,47 +54,44 @@ class TaskSM(StateMachine):
         return self.current_state.value
     
     @staticmethod
-    def from_model(db_model, id=None):
+    def from_model(inst, id=None):
         """
         从数据库中加载task状态机
         """
 
-        if db_model is None and id is not None:
-            db_model = Task.get_or_none(Task.id == id)
-        if db_model is None:
+        if inst is None and id is not None:
+            inst = Task.get_or_none(Task.id == id)
+        if inst is None:
             raise Exception("TaskSM.from_model, task not found, id: %s" % id)
-        instance = TaskSM(task_desc=db_model.task_desc, deepthink_id=db_model.deepthink, start_value=db_model.status)
-        instance.db_model = db_model
-        instance.task_desc = db_model.task_desc
-        instance.result = db_model.result
-        instance.propose_time = db_model.propose_time
-        instance.update_time = db_model.update_time
-        instance.finish_time = db_model.finish_time
-        instance.id = db_model.id
+        instance = TaskSM(task=inst.task, deepthink_id=inst.deepthink, start_value=inst.status)
+        instance.inst = inst
+        instance.task_desc = inst.task_desc
+        instance.result = inst.result
+        instance.propose_time = inst.propose_time
+        instance.update_time = inst.update_time
+        instance.finish_time = inst.finish_time
+        instance.id = inst.id
         return instance
 
     def save_model(self):
         "save task to db"
 
-        if self.db_model is None:
-            self.db_model = Task.create(
+        if self.inst is None:
+            values = Task.get_defaults()
+            values.update(dict(
                 id = self.id,
-                task_desc = self.task_desc,
+                task = self.task,
                 deepthink = self.deepthink_id,
-                status = self.state,
-                result = self.result,
-                summary = self.summary,
-                propose_time = self.propose_time,
-                update_time = self.update_time,
-                finish_time = self.finish_time,
-            )
-        self.db_model.result = self.result
-        self.db_model.summary = self.summary
-        self.db_model.status = self.state
-        self.db_model.update_time = get_now_unixtime()
-        if self.state == Status.DONE and self.db_model.finish_time == 0:
-            self.db_model.finish_time = get_now_unixtime()
-        save_rows = self.db_model.save()
+            ))
+            self.inst = Task.create(**values)
+        self.inst.task_desc = self.task_desc
+        self.inst.result = self.result
+        self.inst.summary = self.summary
+        self.inst.status = self.state
+        self.inst.update_time = get_now_unixtime()
+        if self.state == Status.DONE and self.inst.finish_time == 0:
+            self.inst.finish_time = get_now_unixtime()
+        save_rows = self.inst.save()
         if save_rows <= 0:
             raise Exception("TaskSM.save_model, save task failed")
 

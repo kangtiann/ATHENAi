@@ -4,6 +4,7 @@ import uuid
 from typing import List, Tuple
 from .db import db
 from peewee import *
+from util.time import get_now_unixtime
 
 
 class BaseModel(Model):
@@ -15,6 +16,7 @@ class BaseModel(Model):
 class Vision(BaseModel):
     id = CharField(primary_key=True)
     vision = CharField(index=True, unique=True)
+    vision_desc = TextField()
     status = CharField(index=True)
     priority = CharField(index=True)
     tags = CharField()
@@ -23,18 +25,34 @@ class Vision(BaseModel):
     update_time = IntegerField()
     finish_time = IntegerField()
 
+    @staticmethod
+    def get_defaults():
+        return dict(
+            id=Id.new_id(),
+            vision_desc = "",
+            status = Status.INIT,
+            priority = Priority.LOW,
+            tags = "",
+            propose_by = "",
+            propose_time = get_now_unixtime(),
+            update_time = get_now_unixtime(),
+            finish_time = 0
+        )
+
 
 class VisionProgress(BaseModel):
     id = CharField(primary_key=True)
     vision = ForeignKeyField(Vision, backref='progress', on_delete='CASCADE')
+    propose_by = CharField(index=True)
+    propose_time = IntegerField()
+    title = TextField()
     content = TextField()
-    summary = TextField()
-    update_time = IntegerField()
 
 
 class Research(BaseModel):
     id = CharField(primary_key=True)
     research = CharField(index=True, unique=True)
+    research_desc = TextField()
     vision = ForeignKeyField(Vision, backref='research', on_delete='CASCADE')
     result = TextField()
     report_path = CharField()
@@ -46,18 +64,36 @@ class Research(BaseModel):
     update_time = IntegerField()
     finish_time = IntegerField()
 
+    @staticmethod
+    def get_defaults():
+        return dict(
+            id=Id.new_id(),
+            research_desc = "",
+            status = Status.INIT,
+            priority = Priority.LOW,
+            result = "",
+            report_path = "",
+            tags = "",
+            propose_by = "",
+            propose_time = get_now_unixtime(),
+            update_time = get_now_unixtime(),
+            finish_time = 0
+        )
+
 
 class ResearchProgress(BaseModel):
     id = CharField(primary_key=True)
     research = ForeignKeyField(Research, backref='progress', on_delete='CASCADE')
+    propose_by = CharField(index=True)
+    propose_time = IntegerField()
+    title = TextField()
     content = TextField()
-    summary = TextField()
-    update_time = IntegerField()
 
 
 class Deepthink(BaseModel):
     id = CharField(primary_key=True)
     deepthink = CharField(index=True)
+    deepthink_desc = TextField()
     research = ForeignKeyField(Research, backref='deepthink', on_delete='CASCADE')
     result = TextField()
     status = CharField(index=True)
@@ -67,19 +103,36 @@ class Deepthink(BaseModel):
     propose_time = IntegerField()
     update_time = IntegerField()
     finish_time = IntegerField()
+    
+    @staticmethod
+    def get_defaults():
+        return dict(
+            id=Id.new_id(),
+            deepthink_desc = "",
+            status = Status.INIT,
+            priority = Priority.LOW,
+            result = "",
+            tags = "",
+            propose_by = "",
+            propose_time = get_now_unixtime(),
+            update_time = get_now_unixtime(),
+            finish_time = 0
+        )
 
 
 class DeepthinkProgress(BaseModel):
     id = CharField(primary_key=True)
     deepthink = ForeignKeyField(Deepthink, backref='progress', on_delete='CASCADE')
+    propose_by = CharField(index=True)
+    propose_time = IntegerField()
+    title = TextField()
     content = TextField()
-    summary = TextField()
-    update_time = IntegerField()
 
 
 class Task(BaseModel):
     id = CharField(primary_key=True)
-    task_desc = CharField(index=True)
+    task = CharField(index=True)
+    task_desc = TextField()
     deepthink = ForeignKeyField(Deepthink, backref='task', on_delete='CASCADE')
     result = TextField()
     status = CharField(index=True)
@@ -87,6 +140,20 @@ class Task(BaseModel):
     propose_time = IntegerField()
     update_time = IntegerField()
     finish_time = IntegerField()
+
+    @staticmethod
+    def get_defaults():
+        return dict(
+            id=Id.new_id(),
+            task_desc = "",
+            result = "",
+            status = Status.INIT,
+            priority = Priority.LOW,
+            summary = "",
+            propose_time = get_now_unixtime(),
+            update_time = get_now_unixtime(),
+            finish_time = 0
+        )
 
 
 class Resource(BaseModel):
@@ -97,6 +164,16 @@ class Resource(BaseModel):
     url_links = CharField()
     local_path = CharField(index=True)
     summary = TextField()
+
+
+class LLMChatHistory(BaseModel):
+    id = CharField(primary_key=True)
+    vision = ForeignKeyField(Vision, backref='chat_history', on_delete='CASCADE')
+    propose_by = CharField(index=True)
+    message = TextField()
+    propose_time = IntegerField()
+    cost_ms = IntegerField()
+    tags = CharField()
 
 
 # Maybe 这个存图数据库
@@ -119,9 +196,10 @@ class Status:
     SUSPENDED = "suspended"
     RESUMED = "resumed"
     PROPOSED = "proposed"
+    REJECTED_PROPOSAL = "rejected_proposal"
 
-    COMMITED = "commited"
-    IMPREFECT_COMMIT = "imperfect_commit"
+    COMMITTED = "committed"
+    IMPERFECT_COMMIT = "imperfect_commit"
     ACCEPTED_COMMIT = "accepted_commit"
     REJECTED_COMMIT = "rejected_commit"
     ACCEPTED_BY_HUMEN = "accepted_by_humen"
@@ -151,10 +229,11 @@ class Events:
     DONE = "done"
     
     PROPOSAL = "proposal" # 提案
-    ACCEPT_PROPOSAL = "accept_proposal" # 接受提案    
+    ACCEPT_PROPOSAL = "accept_proposal" # 接受提案
+    REJECT_PROPOSAL = "reject_proposal" # 拒绝提案
     
     COMMIT = "commit" # 提交初步结果
-    IMPERFECT_COMMIT = "imperfect_commit" # 不完美提交
+    IMPERFECT_COMMIT = "imperfect_commit" # 超过提交次数，Alice 认定为不完美提交
     ACCEPT_COMMIT = "accept_commit" # Alice 接受提交
     REJECT_COMMIT = "reject_commit" # Alice 拒绝提交
     
@@ -166,6 +245,13 @@ class Priority:
     HIGH = "high"
     MIDDLE = "middle"
     LOW = "low"
+
+
+class ProposalBy:
+    HUMEN = "humen"
+    ALICE = "alice"
+    THINKER = "thinker"
+    LLM = "LLM"
 
 
 class Id:

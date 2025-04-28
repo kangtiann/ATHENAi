@@ -19,7 +19,7 @@ def test_vision_sm():
 
     vision_id = vision_sm.id
 
-    new_vision_sm = VisionSM.from_model(db_model=None, id=vision_id)
+    new_vision_sm = VisionSM.from_model(inst=None, id=vision_id)
     
     print("new_vision_sm state: ", new_vision_sm.state)
     new_vision_sm.send("done")
@@ -35,7 +35,7 @@ def test_research_sm():
 
     research_id = research_sm.id
 
-    new_research_sm = ResearchSM.from_model(db_model=None, id=research_id)
+    new_research_sm = ResearchSM.from_model(inst=None, id=research_id)
     
     print("new_research_sm state: ", new_research_sm.state)
     new_research_sm.result = "Transformer 架构如何实现高效的并行计算的方式包括 1. 多头注意力机制 2. 位置编码 3. 残差网络 4. 层归一化"
@@ -52,7 +52,7 @@ def test_deepthink_sm():
 
     deepthink_id = deepthink_sm.id
 
-    new_deepthink_sm = DeepthinkSM.from_model(db_model=None, id=deepthink_id)
+    new_deepthink_sm = DeepthinkSM.from_model(inst=None, id=deepthink_id)
     
     print("new_deepthink_sm state: ", new_deepthink_sm.state)
     new_deepthink_sm.result = "多头注意力可以进行高效的并行计算，因为多个头没有耦合，在计算是是可以并行计算的，因此可以高效并行计算"
@@ -70,7 +70,7 @@ def test_task_sm():
 
     task_id = task_sm.id
 
-    new_task_sm = TaskSM.from_model(db_model=None, id=task_id)
+    new_task_sm = TaskSM.from_model(inst=None, id=task_id)
     
     print("new_task_sm state: ", new_task_sm.state)
     new_task_sm.result = "Attention is all your need 论文中提到，多头注意力实现的细节包括 xxxx"

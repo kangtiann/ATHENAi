@@ -10,11 +10,12 @@ class VisionSM(StateMachine):
     logger = logging.getLogger("VisionSM")
 
     # db instance
-    db_model = None
+    inst = None
 
     # props
     id = ""
     vision = ""
+    vision_desc = ""
     propose_by = ""
     propose_time = None
     update_time = None
@@ -58,50 +59,44 @@ class VisionSM(StateMachine):
         return self.current_state.value
     
     @staticmethod
-    def from_model(db_model, id=None):
+    def from_model(inst, id=None):
         """
         从数据库中加载vision状态机
         """
 
-        if db_model is None and id is not None:
-            db_model = Vision.get_or_none(Vision.id == id)
-        if db_model is None:
+        if inst is None and id is not None:
+            inst = Vision.get_or_none(Vision.id == id)
+        if inst is None:
             raise Exception("VisionSM.from_model, vision not found, id: %s" % id)
-        instance = VisionSM(vision=db_model.vision, start_value=db_model.status)
-        instance.db_model = db_model
-        instance.vision = db_model.vision
-        instance.propose_by = db_model.propose_by
-        instance.propose_time = db_model.propose_time
-        instance.update_time = db_model.update_time
-        instance.finish_time = db_model.finish_time
-        instance.priority = db_model.priority
-        instance.tags = db_model.tags
-        instance.id = db_model.id
+        instance = VisionSM(vision=inst.vision, start_value=inst.status)
+        instance.inst = inst
+        instance.vision = inst.vision
+        instance.vision_desc = inst.vision_desc
+        instance.propose_by = inst.propose_by
+        instance.propose_time = inst.propose_time
+        instance.update_time = inst.update_time
+        instance.finish_time = inst.finish_time
+        instance.priority = inst.priority
+        instance.tags = inst.tags
+        instance.id = inst.id
         return instance
 
     def save_model(self):
         "save vision to db"
 
-        if self.db_model is None:
-            self.db_model = Vision.create(
-                id = self.id,
-                vision = self.vision,
-                status = self.state,
-                priority = self.priority,
-                tags = self.tags,
-                propose_by = self.propose_by,
-                propose_time = get_now_unixtime(),
-                update_time = get_now_unixtime(),
-                finish_time = 0,
-            )
-        self.db_model.propose_by = self.propose_by
-        self.db_model.priority = self.priority
-        self.db_model.tags = self.tags
-        self.db_model.status = self.state
-        self.db_model.update_time = get_now_unixtime()
-        if self.state == Status.DONE and self.db_model.finish_time == 0:
-            self.db_model.finish_time = get_now_unixtime()
-        save_rows = self.db_model.save()
+        if self.inst is None:
+            values = Vision.get_defaults()
+            values.update(dict(vision=self.vision, id=self.id))
+            self.inst = Vision.create(**values)
+        self.inst.vision_desc = self.vision_desc
+        self.inst.propose_by = self.propose_by
+        self.inst.priority = self.priority
+        self.inst.tags = self.tags
+        self.inst.status = self.state
+        self.inst.update_time = get_now_unixtime()
+        if self.state == Status.DONE and self.inst.finish_time == 0:
+            self.inst.finish_time = get_now_unixtime()
+        save_rows = self.inst.save()
         if save_rows <= 0:
             raise Exception("VisionSM.save_model, save vision failed")
 

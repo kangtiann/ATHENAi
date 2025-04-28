@@ -3,3 +3,4 @@ python-statemachine==2.5.0
 peewee==3.17.9
 psycopg2==2.9.10
 fastapi[standard]==0.115.12
+2.13.1

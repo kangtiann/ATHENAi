@@ -48,6 +48,33 @@ npm install @mui/material @emotion/react @emotion/styled @mui/icons-materia
 
 ## Start API Server
 
+
+Init Databases:
+```bash
+psql postgres
+
+create database athenai
+```
+
+```bash
+source .venv/bin/activate
+python init_database.py
+```
+
+Start server:
 ```bash
 bash api/start-api.sh
+```
+
+When Drop database: DETAIL:  There is 1 other session using the database.
+Kill ATHENAi process.
+```bash
+SELECT 
+    pg_terminate_backend(pid) 
+FROM 
+    pg_stat_activity 
+WHERE 
+    pid <> pg_backend_pid()
+    AND datname = 'athenai'
+    ;
 ```

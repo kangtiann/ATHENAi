@@ -10,11 +10,12 @@ class DeepthinkSM(StateMachine):
     logger = logging.getLogger("DeepthinkSM")
 
     # db instance
-    db_model = None
+    inst = None
 
     # props
     id = ""
     deepthink = ""
+    deepthink_desc = ""
     result = ""
     research_id = None
     propose_by = ""
@@ -34,12 +35,21 @@ class DeepthinkSM(StateMachine):
     s_suspended = State(value=Status.SUSPENDED)
     s_resumed = State(value=Status.RESUMED)
     s_proposed = State(value=Status.PROPOSED)
+    s_rejected_proposal = State(value=Status.REJECTED_PROPOSAL, final=True)
+
+    s_committed = State(value=Status.COMMITTED)
+    s_accepted_commit = State(value=Status.ACCEPTED_COMMIT)
+    s_rejected_commit = State(value=Status.REJECTED_COMMIT)
+    s_imperfect_commit = State(value=Status.IMPERFECT_COMMIT)
+    s_accepted_by_humen = State(value=Status.ACCEPTED_BY_HUMEN)
+    s_rejected_by_humen = State(value=Status.REJECTED_BY_HUMEN, final=True)
     s_done = State(value=Status.DONE, final=True)
 
     cycle = (
         s_init.to(s_ready, event=Events.READY)
         | s_init.to(s_proposed, event=Events.PROPOSAL)
         | s_proposed.to(s_ready, event=Events.ACCEPT_PROPOSAL)
+        | s_proposed.to(s_rejected_proposal, event=Events.REJECT_PROPOSAL)
         | s_ready.to(s_assigned, event=Events.ASSIGN)
         | s_assigned.to(s_doing, event=Events.START)
         | s_init.to(s_doing, event=Events.START)
@@ -51,6 +61,17 @@ class DeepthinkSM(StateMachine):
         | s_resumed.to(s_doing, event=Events.START)
         | s_fail.to(s_init, event=Events.RETRY)
         | s_cancel.to(s_init, event=Events.RETRY)
+        
+        | s_doing.to(s_committed, event=Events.COMMIT)
+        | s_committed.to(s_accepted_commit, event=Events.ACCEPT_COMMIT)
+        | s_committed.to(s_rejected_commit, event=Events.REJECT_COMMIT)
+        | s_committed.to(s_imperfect_commit, event=Events.IMPERFECT_COMMIT)
+        | s_accepted_commit.to(s_accepted_by_humen, event=Events.ACCEPT_BY_HUMEN)
+        | s_accepted_commit.to(s_rejected_by_humen, event=Events.REJECT_BY_HUMEN)
+        | s_rejected_commit.to(s_doing, event=Events.START)
+        | s_imperfect_commit.to(s_accepted_by_humen, event=Events.ACCEPT_BY_HUMEN)
+        | s_imperfect_commit.to(s_rejected_by_humen, event=Events.REJECT_BY_HUMEN)
+        | s_accepted_by_humen.to(s_done, event=Events.DONE)
         | s_doing.to(s_done, event=Events.DONE)
     )
 
@@ -67,54 +88,50 @@ class DeepthinkSM(StateMachine):
         return self.current_state.value
     
     @staticmethod
-    def from_model(db_model, id=None):
+    def from_model(inst, id=None):
         """
         从数据库中加载deepthink状态机
         """
 
-        if db_model is None and id is not None:
-            db_model = Deepthink.get_or_none(Deepthink.id == id)
-        if db_model is None:
+        if inst is None and id is not None:
+            inst = Deepthink.get_or_none(Deepthink.id == id)
+        if inst is None:
             raise Exception("DeepthinkSM.from_model, deepthink not found, id: %s" % id)
-        instance = DeepthinkSM(deepthink=db_model.deepthink, research_id=db_model.research, start_value=db_model.status)
-        instance.db_model = db_model
-        instance.deepthink = db_model.deepthink
-        instance.result = db_model.result
-        instance.propose_by = db_model.propose_by
-        instance.propose_time = db_model.propose_time
-        instance.update_time = db_model.update_time
-        instance.finish_time = db_model.finish_time
-        instance.priority = db_model.priority
-        instance.tags = db_model.tags
-        instance.id = db_model.id
+        instance = DeepthinkSM(deepthink=inst.deepthink, research_id=inst.research, start_value=inst.status)
+        instance.inst = inst
+        instance.deepthink = inst.deepthink
+        instance.deepthink_desc = inst.deepthink_desc
+        instance.result = inst.result
+        instance.propose_by = inst.propose_by
+        instance.propose_time = inst.propose_time
+        instance.update_time = inst.update_time
+        instance.finish_time = inst.finish_time
+        instance.priority = inst.priority
+        instance.tags = inst.tags
+        instance.id = inst.id
         return instance
 
     def save_model(self):
         "save deepthink to db"
 
-        if self.db_model is None:
-            self.db_model = Deepthink.create(
+        if self.inst is None:
+            values = Deepthink.get_defaults()
+            values.update(dict(
                 id = self.id,
                 deepthink = self.deepthink,
                 research = self.research_id,
-                status = self.state,
-                priority = self.priority,
-                tags = self.tags,
-                result = self.result,
-                propose_by = self.propose_by,
-                propose_time = self.propose_time,
-                update_time = self.update_time,
-                finish_time = self.finish_time,
-            )
-        self.db_model.propose_by = self.propose_by
-        self.db_model.priority = self.priority
-        self.db_model.tags = self.tags
-        self.db_model.result = self.result
-        self.db_model.status = self.state
-        self.db_model.update_time = get_now_unixtime()
-        if self.state == Status.DONE and self.db_model.finish_time == 0:
-            self.db_model.finish_time = get_now_unixtime()
-        save_rows = self.db_model.save()
+            ))
+            self.inst = Deepthink.create(**values)
+        self.inst.deepthink_desc = self.deepthink_desc
+        self.inst.propose_by = self.propose_by
+        self.inst.priority = self.priority
+        self.inst.tags = self.tags
+        self.inst.result = self.result
+        self.inst.status = self.state
+        self.inst.update_time = get_now_unixtime()
+        if self.state == Status.DONE and self.inst.finish_time == 0:
+            self.inst.finish_time = get_now_unixtime()
+        save_rows = self.inst.save()
         if save_rows <= 0:
             raise Exception("DeepthinkSM.save_model, save deepthink failed")
 
